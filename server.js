@@ -1,25 +1,16 @@
 const express = require('express');
 const Feed = require('rss-to-json');
+const rsj = require('rsj');
 const cors = require('cors');
 
 const app = express();
 
-const whitelist = ['http://localhost:4200'];
-app.use(cors({
-  origin: (origin, cb) => {
-    console.log(origin);
-    if (whitelist.indexOf(origin) !== -1) {
-      cb(null, true)
-    } else {
-      cb(new Error('Not allowed by CORS'))
-    }
-  }
-}));
+const whitelist = ['http://localhost:4200', 'https://medium-rss-to-json-proxy.glitch.me', 'undefined'];
+app.use(cors());
 
 app.get('/rss/:data(*)', (req, res, next) => {
-  Feed.load(`https://medium.com/${req.params.data}`, (err, data) => {
-      res.json(data);
-  });
+  console.log(req.params.data, req.query);
+  rsj.r2j(`https://medium.com/${req.params.data}`, (data) => res.json(JSON.parse(data)));
 });
 
 // Setup the status page
