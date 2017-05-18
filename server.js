@@ -36,24 +36,33 @@ const options = {
     });
   }
 };
-var apiProxy = proxy(options);
+// var apiProxy = proxy(options);
 
 var app = express();
+
+app.get('/hello', (req, res, next) => {
+  res.send('hello');
+});
+
+app.get('/rss/:data(.*)', (req, res, next) => {
+  console.log('/rss');
+  res.json(req.params);
+  // Feed.load(`https://medium.com/${req.params.data}`, (err, data) => {
+  //     res.json(data);
+  // });
+});
 
 // Setup the status page
 app.use(require('express-status-monitor')());
 
 // Setup the api
-app.use('/api', apiProxy);
-app.use('/rss/:data', (req, res, next) => {
-  Feed.load(`https://medium.com/${}`)
-});
+// app.use('/api', apiProxy);
 
 var server = app.listen(process.env.PORT || 3000, function(){
   console.log('Listening on port ' + server.address().port);
 });
 
-app.use('/', function (req, res, next) {
+app.get('/', function (req, res, next) {
   res.send('Ready');
 });
 
