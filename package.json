@@ -13,7 +13,8 @@
     "express": "^4.15.3",
     "http-proxy-middleware": "^0.17.4",
     "express-status-monitor": "^0.1.9",
-    "feedme": "^1.0.0"
+    "feedme": "^1.0.0",
+    "xml2js": "^0.4.17"
   },
   "engines": {
     "node": "6.10.x"

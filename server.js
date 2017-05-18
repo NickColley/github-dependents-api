@@ -1,6 +1,7 @@
 const express = require('express');
 const proxy = require('http-proxy-middleware');
 const Feedme = require('feedme');
+const parseString = require('xml2js').parseString;
 
 const options = {
   logLevel: 'debug',
@@ -17,21 +18,20 @@ const options = {
     rejectUnauthorized: false
   },
   onProxyRes: (proxyRes, req, res) => {
-    const parser = new Feedme(true);
     let body = '';
+    const feed = new Feedme(true);
     proxyRes.on('data', (data) => {
-      body += data.toString('utf-8');
+      console.log(typeof data, data);
+      feed.write(data.toString('utf-8'));
     });
     proxyRes.on('end', () => {
       console.log(body);
-      res.write(body);
+      console.log(typeof body);
+      parseString(body, (err, result) => {
+        console.log(err, result);
+        res.write(result);
+      });
     });
-    parser.on('end', () => {
-      const data = parser.done();
-      console.log(data);
-      res.write(data);
-    });
-    // proxyRes.pipe(parser);
   }
 };
 var apiProxy = proxy(options);
