@@ -12,7 +12,8 @@
   "dependencies": {
     "express": "^4.15.3",
     "express-status-monitor": "^0.1.9",
-    "rss-to-json": "^1.0.2"
+    "rss-to-json": "^1.0.2",
+    "cors": "^2.8.3"
   },
   "engines": {
     "node": "6.10.x"

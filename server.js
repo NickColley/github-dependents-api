@@ -1,7 +1,20 @@
 const express = require('express');
 const Feed = require('rss-to-json');
+const cors = require('cors');
 
 const app = express();
+
+const whitelist = ['http://localhost:4200'];
+app.use(cors({
+  origin: (origin, cb) => {
+    console.log(origin);
+    if (whitelist.indexOf(origin) !== -1) {
+      cb(null, true)
+    } else {
+      cb(new Error('Not allowed by CORS'))
+    }
+  }
+}));
 
 app.get('/rss/:data(*)', (req, res, next) => {
   Feed.load(`https://medium.com/${req.params.data}`, (err, data) => {
