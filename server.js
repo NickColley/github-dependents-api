@@ -1,12 +1,13 @@
-var express = require('express');
-var proxy = require('http-proxy-middleware');
-var options = {
+const express = require('express');
+const proxy = require('http-proxy-middleware');
+const Feedme = require('feedme');
+
+const options = {
   logLevel: 'debug',
-  target: 'https://api.airtable.com/v0/',
+  target: 'https://medium.com',
   changeOrigin: true,
   headers: {
-    'Accept': 'application/json',
-    'Authorization': 'Bearer ' + process.env.API_KEY
+    'Accept': 'application/rss+xml',
   },
   pathRewrite: {
     '^/api' : ''
@@ -14,6 +15,23 @@ var options = {
   secure: false,
   ssl: {
     rejectUnauthorized: false
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    const _write = res.write;
+    let output;
+    let body = "";
+    const parser = new Feedme();
+    proxyRes.on('data', function(data) {
+      data = data.toString('utf-8');
+      body += data;
+    });
+    res.write = function (data) {
+      try{
+        eval("output="+body)
+        output = mock.mock(output)
+        _write.call(res,JSON.stringify(output));
+      } catch (err) {}
+    }
   }
 };
 var apiProxy = proxy(options);

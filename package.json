@@ -2,7 +2,7 @@
   "//1": "describes your app and its dependencies",
   "//2": "https://docs.npmjs.com/files/package.json",
   "//3": "updating this file will download and update your packages",
-  "name": "my-glitch-app",
+  "name": "rss-to-json-proxy",
   "version": "0.0.1",
   "description": "What am I about?",
   "main": "server.js",
@@ -10,9 +10,10 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.15.2",
+    "express": "^4.15.3",
     "http-proxy-middleware": "^0.17.4",
-    "express-status-monitor": "^0.1.9"
+    "express-status-monitor": "^0.1.9",
+    "feedme": "^1.0.0"
   },
   "engines": {
     "node": "6.10.x"
