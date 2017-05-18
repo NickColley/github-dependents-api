@@ -9,8 +9,14 @@ const whitelist = ['http://localhost:4200', 'https://medium-rss-to-json-proxy.gl
 app.use(cors());
 
 app.get('/rss/:data(*)', (req, res, next) => {
-  console.log(req.params.data, req.query);
-  rsj.r2j(`https://medium.com/${req.params.data}`, (data) => res.json(JSON.parse(data)));
+  rsj.r2j(`https://medium.com/${req.params.data}`, (data) => {
+    let parsed = JSON.parse(data);
+    const limit = +req.query.limit;
+    if (!isNaN(limit)) {
+      parsed = parsed.slice(0, limit);
+    }
+    res.json(parsed);
+  });
 });
 
 // Setup the status page
