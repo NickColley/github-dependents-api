@@ -17,21 +17,21 @@ const options = {
     rejectUnauthorized: false
   },
   onProxyRes: (proxyRes, req, res) => {
-    const _write = res.write;
-    let output;
-    let body = "";
-    const parser = new Feedme();
-    proxyRes.on('data', function(data) {
-      data = data.toString('utf-8');
-      body += data;
+    const parser = new Feedme(true);
+    let body = '';
+    proxyRes.on('data', (data) => {
+      body += data.toString('utf-8');
     });
-    res.write = function (data) {
-      try{
-        eval("output="+body)
-        output = mock.mock(output)
-        _write.call(res,JSON.stringify(output));
-      } catch (err) {}
-    }
+    proxyRes.on('end', () => {
+      console.log(body);
+      res.write(body);
+    });
+    parser.on('end', () => {
+      const data = parser.done();
+      console.log(data);
+      res.write(data);
+    });
+    // proxyRes.pipe(parser);
   }
 };
 var apiProxy = proxy(options);
