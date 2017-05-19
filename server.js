@@ -5,7 +5,6 @@ const cors = require('cors');
 
 const app = express();
 
-const whitelist = ['http://localhost:4200', 'https://medium-rss-to-json-proxy.glitch.me', 'undefined'];
 app.use(cors());
 
 app.get('/rss/:data(*)', (req, res, next) => {
@@ -23,7 +22,7 @@ app.get('/rss/:data(*)', (req, res, next) => {
 app.use(require('express-status-monitor')());
 
 // Setup the api
-var server = app.listen(process.env.PORT || 3000, function(){
+const server = app.listen(process.env.PORT || 3000, function(){
   console.log('Listening on port ' + server.address().port);
 });
 
