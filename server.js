@@ -9,9 +9,11 @@ Promise.promisifyAll(cache);
 
 const RSS_FEED_LIST = 'rssFeedList';
 
-const fetchRSSData = new CronJob('00 00 * * * *', () => {
-  console.log('hello');
-  // cache.find()
+const fetchRSSData = new CronJob('*/10 * * * * *', async () => {
+  try {
+    
+  }
+  console.log('running --');
 }, null, true);
 
 cache.insert({
@@ -37,7 +39,6 @@ app.get('/rss/:data(*)', async (req, res, next) => {
   
   try {
     const {feeds} = await cache.findOneAsync({key: RSS_FEED_LIST});
-
     if (feeds.indexOf(req.params.data) > -1) {
       const {data} = await cache.findOneAsync({key: req.params.data});
       return processData(data);
