@@ -5,12 +5,18 @@ const cors = require('cors');
 const cache = require('./db/cache');
 const CronJob = require('cron').CronJob;
 
-cons
+const fetchRSSData = new CronJob('00 00 * * * *', () =>{
+  console.log('hello');
+}, null, true);
+
+cache.insert({
+  key: 'rssFeedList',
+  value: []
+});
 
 const app = express();
 
 app.use(cors());
-
 app.get('/rss/:data(*)', (req, res, next) => {
   const processData = (data, alreadyStored) => {
     let parsed = JSON.parse(data);
@@ -21,11 +27,11 @@ app.get('/rss/:data(*)', (req, res, next) => {
     res.json(parsed);
   };
   
-  cache.find({key: req.params.data}, (err, docs) => {
+  cache.find({key: 'rssFeedList'}, (err, docs) => {
     if (err) {
       console.log(err);
-      rsj.r2j(`https://medium.com/${req.params.data}`, processData);
-    } else {
+      return res.status(500).json(err);
+    }
       processData(docs, true);  
     }
   });
