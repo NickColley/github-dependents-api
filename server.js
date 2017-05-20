@@ -9,6 +9,9 @@ const app = express();
 app.use(cors());
 
 app.get('/rss/:data(*)', (req, res, next) => {
+  cache.find({key: req.params.data}, (err, docs) => {
+    
+  });
   rsj.r2j(`https://medium.com/${req.params.data}`, (data) => {
     let parsed = JSON.parse(data);
     const limit = +req.query.limit;
