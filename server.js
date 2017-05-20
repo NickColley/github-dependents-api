@@ -2,6 +2,7 @@ const express = require('express');
 const Feed = require('rss-to-json');
 const rsj = require('rsj');
 const cors = require('cors');
+const cache = require('./db/cache');
 
 const app = express();
 

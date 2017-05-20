@@ -14,7 +14,8 @@
     "express-status-monitor": "^0.1.9",
     "rss-to-json": "^1.0.2",
     "cors": "^2.8.3",
-    "rsj": "^0.0.4"
+    "rsj": "^0.0.4",
+    "nedb-core": "^3.0.6"
   },
   "engines": {
     "node": "6.10.x"
