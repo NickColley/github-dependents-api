@@ -5,8 +5,11 @@ const cors = require('cors');
 const cache = require('./db/cache');
 const CronJob = require('cron').CronJob;
 
-const fetchRSSData = new CronJob('00 00 * * * *', () =>{
+const RSS_FEED_LIST = 'rssFeedList';
+
+const fetchRSSData = new CronJob('00 00 * * * *', () => {
   console.log('hello');
+  // cache.find()
 }, null, true);
 
 cache.insert({
@@ -18,6 +21,9 @@ const app = express();
 
 app.use(cors());
 app.get('/rss/:data(*)', (req, res, next) => {
+  if (req.params.data === RSS_FEED_LIST) {
+    return next(new Error('Incorrect parameter'));
+  }
   const processData = (data, alreadyStored) => {
     let parsed = JSON.parse(data);
     const limit = +req.query.limit;
@@ -27,20 +33,23 @@ app.get('/rss/:data(*)', (req, res, next) => {
     res.json(parsed);
   };
   
-  cache.find({key: 'rssFeedList'}, (err, docs) => {
+  cache.find({key: RSS_FEED_LIST}, (err, docs) => {
     if (err) {
       console.log(err);
-      return res.status(500).json(err);
+      return next(err);
     }
     if (docs.feeds.indexOf(req.params.data) > -1) {
-      cache.find({key: req.params.data}, (err, docs) => {
-        if (err) return res.status(500).json(err);
-        return processData(docs);
+      cache.findOne({key: req.params.data}, (err, doc) => {
+        if (err) return next(err);
+        return processData(doc.data);
       });
     } else {
-      cache.update({key: 'rssFeedList'}, {$push: req.params.data}, {}, (err, updatedDoc) => {
+      cache.update({key: RSS_FEED_LIST}, {$push: req.params.data}, {}, (err, updatedDoc) => {
         rsj.r2j(`https://medium.com/${req.params.data}`, (data) => {
-          cac
+          cache.insert({key: req.params.data, data}, (err) => {
+            if (err) return next(err);
+            return processData(data);
+          });
         });
       });
     }
@@ -51,12 +60,17 @@ app.get('/rss/:data(*)', (req, res, next) => {
 app.use(require('express-status-monitor')());
 
 // Setup the api
-const server = app.listen(process.env.PORT || 3000, function(){
+const server = app.listen(process.env.PORT || 3000, () => {
   console.log('Listening on port ' + server.address().port);
 });
 
-app.get('/', function (req, res, next) {
+app.get('/', (req, res, next) => {
   res.send('Ready');
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).send('Something broke!')
 });
 
 module.exports = app;
