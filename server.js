@@ -1,8 +1,8 @@
 const express = require('express');
 const Feed = require('rss-to-json');
-const rsj = require('rsj');
 const cors = require('cors');
 const cache = require('./db/cache');
+const feedFetch = require('./fetch-feed-promise');
 const CronJob = require('cron').CronJob;
 const Promise = require("bluebird");
 Promise.promisifyAll(cache);
@@ -11,9 +11,16 @@ const RSS_FEED_LIST = 'rssFeedList';
 
 const fetchRSSData = new CronJob('*/10 * * * * *', async () => {
   try {
-    
+    console.log('running --');
+    const {feeds} = await cache.findOneAsync({key: RSS_FEED_LIST});
+    for (let feedUri of feeds) {
+      const data = await feedFetch.fetch(`https://medium.com/${feedUri}`);
+      await cache.insert({key: feedUri, data});
+    }
+    console.log('ran');
+  } catch (err) {
+    console.log('fetching feeds caused an error');
   }
-  console.log('running --');
 }, null, true);
 
 cache.insert({
@@ -44,12 +51,9 @@ app.get('/rss/:data(*)', async (req, res, next) => {
       return processData(data);
     } else {
       await cache.updateAsync({key: RSS_FEED_LIST}, {$push: {feeds: req.params.data}});
-      rsj.r2j(`https://medium.com/${req.params.data}`, (data) => {
-        cache.insert({key: req.params.data, data}, (err) => {
-          if (err) return next(err);
-          return processData(data);
-        });
-      });
+      const data = await feedFetch.fetch(`https://medium.com/${req.params.data}`);
+      await cache.insert({key: req.params.data, data});
+      return processData(data);
     }
   } catch (err) {
     return next(err);
