@@ -26,7 +26,7 @@ app.get('/rss/:data(*)', async (req, res, next) => {
   if (req.params.data === RSS_FEED_LIST) {
     return next(new Error('Incorrect parameter'));
   }
-  const processData = (data, alreadyStored) => {
+  const processData = (data) => {
     let parsed = JSON.parse(data);
     const limit = +req.query.limit;
     if (!isNaN(limit)) {
@@ -35,29 +35,24 @@ app.get('/rss/:data(*)', async (req, res, next) => {
     res.json(parsed);
   };
   
-  cache.findOne({key: RSS_FEED_LIST}, (err, doc) => {
-    if (err) {
-      console.log(err);
-      return next(err);
-    }
-    console.log(doc);
-    if (doc.feeds.indexOf(req.params.data) > -1) {
-      cache.findOne({key: req.params.data}, (err, doc) => {
-        if (err) return next(err);
-        console.log(doc);
-        return processData(doc.data);
-      });
+  try {
+    const {feeds} = await cache.findOneAsync({key: RSS_FEED_LIST});
+
+    if (feeds.indexOf(req.params.data) > -1) {
+      const {data} = await cache.findOneAsync({key: req.params.data});
+      return processData(data);
     } else {
-      cache.update({key: RSS_FEED_LIST}, {$push: {feeds: req.params.data}}, {}, (err, updatedDoc) => {
-        rsj.r2j(`https://medium.com/${req.params.data}`, (data) => {
-          cache.insert({key: req.params.data, data}, (err) => {
-            if (err) return next(err);
-            return processData(data);
-          });
+      await cache.updateAsync({key: RSS_FEED_LIST}, {$push: {feeds: req.params.data}});
+      rsj.r2j(`https://medium.com/${req.params.data}`, (data) => {
+        cache.insert({key: req.params.data, data}, (err) => {
+          if (err) return next(err);
+          return processData(data);
         });
       });
     }
-  });
+  } catch (err) {
+    return next(err);
+  }
 });
 
 // Setup the status page
