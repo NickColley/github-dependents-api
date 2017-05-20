@@ -9,15 +9,13 @@ Promise.promisifyAll(cache);
 
 const RSS_FEED_LIST = 'rssFeedList';
 
-const fetchRSSData = new CronJob('*/10 * * * * *', async () => {
+const fetchRSSData = new CronJob('00 00 * * * *', async () => {
   try {
-    console.log('running --');
     const {feeds} = await cache.findOneAsync({key: RSS_FEED_LIST});
     for (let feedUri of feeds) {
       const data = await feedFetch.fetch(`https://medium.com/${feedUri}`);
-      await cache.insert({key: feedUri, data});
+      const update = await cache.updateAsync({key: feedUri}, {data});
     }
-    console.log('ran');
   } catch (err) {
     console.log('fetching feeds caused an error');
   }
@@ -35,6 +33,7 @@ app.get('/rss/:data(*)', async (req, res, next) => {
   if (req.params.data === RSS_FEED_LIST) {
     return next(new Error('Incorrect parameter'));
   }
+  
   const processData = (data) => {
     let parsed = JSON.parse(data);
     const limit = +req.query.limit;
@@ -52,7 +51,7 @@ app.get('/rss/:data(*)', async (req, res, next) => {
     } else {
       await cache.updateAsync({key: RSS_FEED_LIST}, {$push: {feeds: req.params.data}});
       const data = await feedFetch.fetch(`https://medium.com/${req.params.data}`);
-      await cache.insert({key: req.params.data, data});
+      await cache.insertAsync({key: req.params.data, data});
       return processData(data);
     }
   } catch (err) {
