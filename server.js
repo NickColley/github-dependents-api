@@ -4,6 +4,8 @@ const rsj = require('rsj');
 const cors = require('cors');
 const cache = require('./db/cache');
 const CronJob = require('cron').CronJob;
+const Promise = require("bluebird");
+Promise.promisifyAll(cache);
 
 const RSS_FEED_LIST = 'rssFeedList';
 
@@ -20,7 +22,7 @@ cache.insert({
 const app = express();
 
 app.use(cors());
-app.get('/rss/:data(*)', (req, res, next) => {
+app.get('/rss/:data(*)', async (req, res, next) => {
   if (req.params.data === RSS_FEED_LIST) {
     return next(new Error('Incorrect parameter'));
   }
@@ -33,18 +35,20 @@ app.get('/rss/:data(*)', (req, res, next) => {
     res.json(parsed);
   };
   
-  cache.find({key: RSS_FEED_LIST}, (err, docs) => {
+  cache.findOne({key: RSS_FEED_LIST}, (err, doc) => {
     if (err) {
       console.log(err);
       return next(err);
     }
-    if (docs.feeds.indexOf(req.params.data) > -1) {
+    console.log(doc);
+    if (doc.feeds.indexOf(req.params.data) > -1) {
       cache.findOne({key: req.params.data}, (err, doc) => {
         if (err) return next(err);
+        console.log(doc);
         return processData(doc.data);
       });
     } else {
-      cache.update({key: RSS_FEED_LIST}, {$push: req.params.data}, {}, (err, updatedDoc) => {
+      cache.update({key: RSS_FEED_LIST}, {$push: {feeds: req.params.data}}, {}, (err, updatedDoc) => {
         rsj.r2j(`https://medium.com/${req.params.data}`, (data) => {
           cache.insert({key: req.params.data, data}, (err) => {
             if (err) return next(err);
