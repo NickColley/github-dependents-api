@@ -9,8 +9,9 @@ Promise.promisifyAll(cache);
 
 const RSS_FEED_LIST = 'rssFeedList';
 
-const fetchRSSData = new CronJob('00 00 * * * *', async () => {
+const fetchRSSData = new CronJob('00 * * * * *', async () => {
   try {
+    console.log('Fetching data');
     const {feeds} = await cache.findOneAsync({key: RSS_FEED_LIST});
     for (let feedUri of feeds) {
       const data = await feedFetch.fetch(`https://medium.com/${feedUri}`);
