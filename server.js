@@ -20,7 +20,6 @@ const fetchRSSData = new CronJob('00 00 * * * *', async () => {
     console.log('fetching feeds caused an error');
   }
 }, null, true);
-
 cache.insert({
   key: 'rssFeedList',
   feeds: []
@@ -68,7 +67,7 @@ const server = app.listen(process.env.PORT || 3000, () => {
 });
 
 app.get('/', (req, res, next) => {
-  res.send('Ready');
+  res.send('Ready to convert your Medium RSS feed to JSON.  Just GET https://medium-rss-to-json-proxy.glitch.me/<your_publication_name>');
 });
 
 app.use((err, req, res, next) => {
