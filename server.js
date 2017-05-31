@@ -9,22 +9,22 @@ Promise.promisifyAll(cache);
 
 const RSS_FEED_LIST = 'rssFeedList';
 
-const fetchRSSData = new CronJob('00 * * * * *', async () => {
-  try {
-    console.log('Fetching data');
-    const {feeds} = await cache.findOneAsync({key: RSS_FEED_LIST});
-    for (let feedUri of feeds) {
-      const data = await feedFetch.fetch(`https://medium.com/${feedUri}`);
-      const update = await cache.updateAsync({key: feedUri}, {data});
-    }
-  } catch (err) {
-    console.log('fetching feeds caused an error');
-  }
-}, null, true);
-cache.insert({
-  key: 'rssFeedList',
-  feeds: []
-});
+// const fetchRSSData = new CronJob('00 * * * * *', async () => {
+//   try {
+//     console.log('Fetching data');
+//     const {feeds} = await cache.findOneAsync({key: RSS_FEED_LIST});
+//     for (let feedUri of feeds) {
+//       const data = await feedFetch.fetch(`https://medium.com/${feedUri}`);
+//       const update = await cache.updateAsync({key: feedUri}, {data});
+//     }
+//   } catch (err) {
+//     console.log('fetching feeds caused an error');
+//   }
+// }, null, true);
+// cache.insert({
+//   key: 'rssFeedList',
+//   feeds: []
+// });
 
 const app = express();
 
@@ -44,16 +44,16 @@ app.get('/rss/:data(*)', async (req, res, next) => {
   };
   
   try {
-    const {feeds} = await cache.findOneAsync({key: RSS_FEED_LIST});
-    if (feeds.indexOf(req.params.data) > -1) {
-      const {data} = await cache.findOneAsync({key: req.params.data});
-      return processData(data);
-    } else {
-      await cache.updateAsync({key: RSS_FEED_LIST}, {$push: {feeds: req.params.data}});
+    // const {feeds} = await cache.findOneAsync({key: RSS_FEED_LIST});
+    // if (feeds.indexOf(req.params.data) > -1) {
+    //   const {data} = await cache.findOneAsync({key: req.params.data});
+    //   return processData(data);
+    // } else {
+      // await cache.updateAsync({key: RSS_FEED_LIST}, {$push: {feeds: req.params.data}});
       const data = await feedFetch.fetch(`https://medium.com/${req.params.data}`);
-      await cache.insertAsync({key: req.params.data, data});
+      // await cache.insertAsync({key: req.params.data, data});
       return processData(data);
-    }
+    // }
   } catch (err) {
     return next(err);
   }
