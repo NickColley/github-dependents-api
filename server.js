@@ -9,10 +9,10 @@ app.set('json spaces', 2);
 
 app.use(cors());
 
-app.get('/:register', async (req, res, next) => {
+app.get('/:register?', async (req, res, next) => {
   const register = req.params.register
   if (!register) {
-    return next(new Error('No register selected'));
+    register = 'registers'
   }
   try {
     request(`https://www.registers.service.gov.uk/registers/${register}/download-json`, function (error, response, body) {
@@ -21,7 +21,11 @@ app.get('/:register', async (req, res, next) => {
       }
       if (response && response.statusCode === 200) {
         var parsedJson = JSON.parse(body)
-        return res.json(parsedJson)
+        var jsonKeys = Object.keys(parsedJson)
+        var jsonOutput = jsonKeys.map(key => {
+          return parsedJson[key].item[0]
+        })
+        return res.json(jsonOutput)
       } else {
         return res.sendStatus(404)
       }
