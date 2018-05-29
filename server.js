@@ -4,7 +4,11 @@ const request = require('request');
 
 const app = express();
 
+// Pretty print JSON
+app.set('json spaces', 2); 
+
 app.use(cors());
+
 app.get('/:register', async (req, res, next) => {
   const register = req.params.register
   if (!register) {
@@ -27,16 +31,13 @@ app.get('/:register', async (req, res, next) => {
   }
 });
 
-// Setup the status page
-app.use(require('express-status-monitor')());
-
 // Setup the api
 const server = app.listen(process.env.PORT || 3000, () => {
   console.log('Listening on port ' + server.address().port);
 });
 
 app.get('/', (req, res, next) => {
-  res.send('Ready to convert your Medium RSS feed to JSON.  Just GET https://medium-rss-to-json-proxy.glitch.me/<your_publication_name>');
+  res.send('https://www.registers.service.gov.uk/registers');
 });
 
 app.use((err, req, res, next) => {
