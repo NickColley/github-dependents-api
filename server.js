@@ -41,6 +41,31 @@ function getRegister (register, addURL, callback) {
   });
 }
 
+function renderHtml (title, message) {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>${title}</title>
+  <style>
+    body {
+      font-size: 20px;
+      font-family: Georgia, serif;
+      padding: 1em;
+    }
+    h1 {
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>${message}</h1>
+  </main>
+</body>
+</html>`.trim()
+}
+
 // Pretty print JSON
 app.set('json spaces', 2); 
 
@@ -65,37 +90,14 @@ app.get('/:register?', async (req, res, next) => {
           var list = response;
           var key = 'register';
           const youMeant = didYouMean(input, list, key)
-          const meantResponse = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <title>Did you mean <strong>“${youMeant}”</strong>?</title>
-  <style>
-    body {
-      font-size: 20px;
-      font-family: Georgia, serif;
-      padding: 1em;
-    }
-    h1 {
-      font-weight: normal;
-    }
-  </style>
-</head>
-<body>
-  <p>
-    <h1>
-      Did you mean <strong>“${youMeant}”</strong>?
-    </h1>
-    <br>
-    Try <a href="https://registers.glitch.me/${youMeant}">https://registers.glitch.me/${youMeant}</a>.
-  </p>
-</body>
-</html>
-          `.trim()
+          const meantResponse = renderHtml(
+            `Did you mean “${youMeant}”?`,
+            `Did you mean <strong>“<a href="https://registers.glitch.me/${youMeant}">${youMeant}</a>”</strong>?`
+          )
           if (youMeant) {
             return res.status(404).send(meantResponse);
           }
-         return res.sendStatus(404)
+          return res.status(404).send(renderHtml('Not found', 'Not found'));
         })
       }
       return res.json(response)
