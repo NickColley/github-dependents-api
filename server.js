@@ -7,11 +7,13 @@ const request = require('request');
 const cachedRequest = require('cached-request')(request)
 cachedRequest.setCacheDirectory(os.tmpdir())
 
+const didYouMean = require('didyoumean')
+
 const app = express();
 
 const cacheStaleTimeout = 250; // minutes
 
-function getRegister (register) {
+function getRegister (register, addURL, callback) {
  var requestOptions = {
     url: `https://www.registers.service.gov.uk/registers/${register}/download-json`,
     ttl: cacheStaleTimeout * 60 * 1000
@@ -26,16 +28,15 @@ function getRegister (register) {
       var jsonOutput = jsonKeys.map(key => {
         var item = parsedJson[key].item[0]
         // If default, wack a useful field to get to other registers.
-        if (isRoot) {
+        if (addURL) {
           item['__URL__'] = `https://registers.glitch.me/${item.register}`
         }
         return item
       })
-      return
       console.timeEnd('register')
-      return res.json(jsonOutput)
+      return callback(jsonOutput)
     } else {
-      return res.sendStatus(404)
+      return callback(404)
     }
   });
 }
@@ -56,31 +57,22 @@ app.get('/:register?', async (req, res, next) => {
     register = req.params.register
   }
   try {
-    var requestOptions = {
-      url: `https://www.registers.service.gov.uk/registers/${register}/download-json`,
-      ttl: cacheStaleTimeout * 60 * 1000
-    }
-    cachedRequest(requestOptions, function (error, response, body) {
-      if (error) {
-        throw error
-      }
-      if (response && response.statusCode === 200) {
-        var parsedJson = JSON.parse(body)
-        var jsonKeys = Object.keys(parsedJson)
-        var jsonOutput = jsonKeys.map(key => {
-          var item = parsedJson[key].item[0]
-          // If default, wack a useful field to get to other registers.
-          if (isRoot) {
-            item['__URL__'] = `https://registers.glitch.me/${item.register}`
+    getRegister(register, isRoot, (response) => {
+      if (response === 404) {
+        return getRegister('register', false, (response) => {
+          console.log(response)
+          var input = 'registers';
+          var list = response;
+          var key = 'register';
+          const youMeant = didYouMean(input, list, key);
+          if (youMeant) {
+            return res.status(404).send(youMeant);
           }
-          return item
+         return res.sendStatus(404)
         })
-        console.timeEnd('register')
-        return res.json(jsonOutput)
-      } else {
-        return res.sendStatus(404)
       }
-    });
+      return res.json(response)
+    })
   } catch (err) {
     return next(err);
   }
