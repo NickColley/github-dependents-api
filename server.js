@@ -44,7 +44,7 @@ function getRegister (register, addURL, callback) {
 // Pretty print JSON
 app.set('json spaces', 2); 
 
-app.use(cors());
+// app.use(cors());
 
 app.get('/:register?', async (req, res, next) => {
   console.time('register')
@@ -64,11 +64,36 @@ app.get('/:register?', async (req, res, next) => {
           console.log(response)
           var list = response;
           var key = 'register';
-          const youMeant = 'blah' // didYouMean(input, list, key)
-          const meantResponse = `<!DOCTYPE html><html lang="en"><head></head><body>Did you mean? “${youMeant}” If so, try <a href="https://registers.glitch.me/${youMeant}">https://registers.glitch.me/${youMeant}</a>.</body></html>`
+          const youMeant = didYouMean(input, list, key)
+          const meantResponse = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Did you mean <strong>“${youMeant}”</strong>?</title>
+  <style>
+    body {
+      font-size: 20px;
+      font-family: Georgia, serif;
+      padding: 1em;
+    }
+    h1 {
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+  <p>
+    <h1>
+      Did you mean <strong>“${youMeant}”</strong>?
+    </h1>
+    <br>
+    Try <a href="https://registers.glitch.me/${youMeant}">https://registers.glitch.me/${youMeant}</a>.
+  </p>
+</body>
+</html>
+          `.trim()
           if (youMeant) {
-            // res.set('Content-Type', 'text/html');
-            return res.status(200).send(meantResponse);
+            return res.status(404).send(meantResponse);
           }
          return res.sendStatus(404)
         })
