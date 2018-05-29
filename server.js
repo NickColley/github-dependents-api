@@ -1,32 +1,6 @@
 const express = require('express');
-const Feed = require('rss-to-json');
 const cors = require('cors');
-const cache = require('./db/cache');
-const feedFetch = require('./fetch-feed-promise');
-const CronJob = require('cron').CronJob;
-const Promise = require("bluebird");
-    var request = require('request');
-
-Promise.promisifyAll(cache);
-
-const RSS_FEED_LIST = 'rssFeedList';
-
-// const fetchRSSData = new CronJob('00 * * * * *', async () => {
-//   try {
-//     console.log('Fetching data');
-//     const {feeds} = await cache.findOneAsync({key: RSS_FEED_LIST});
-//     for (let feedUri of feeds) {
-//       const data = await feedFetch.fetch(`https://medium.com/${feedUri}`);
-//       const update = await cache.updateAsync({key: feedUri}, {data});
-//     }
-//   } catch (err) {
-//     console.log('fetching feeds caused an error');
-//   }
-// }, null, true);
-// cache.insert({
-//   key: 'rssFeedList',
-//   feeds: []
-// });
+const request = require('request');
 
 const app = express();
 
@@ -44,6 +18,8 @@ app.get('/:register', async (req, res, next) => {
       if (response && response.statusCode === 200) {
         var parsedJson = JSON.parse(body)
         return res.json(parsedJson)
+      } else {
+        return res.sendStatus(404)
       }
     });
   } catch (err) {

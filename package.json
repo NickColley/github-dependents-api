@@ -20,9 +20,6 @@
     "bluebird": "^3.5.0",
     "request": "^2.87.0"
   },
-  "engines": {
-    "node": "7.x"
-  },
   "repository": {
     "url": "https://glitch.com/edit/#!/welcome-project"
   },
