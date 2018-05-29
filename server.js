@@ -1,6 +1,11 @@
+const os = require('os')
+
 const express = require('express');
 const cors = require('cors');
+
 const request = require('request');
+const cachedRequest = require('cached-request')(request)
+cachedRequest.setCacheDirectory(os.tmpdir())
 
 const app = express();
 
@@ -10,6 +15,7 @@ app.set('json spaces', 2);
 app.use(cors());
 
 app.get('/:register?', async (req, res, next) => {
+  console.time('register')
   const isRoot = !req.params.register
   let register
   // If no param set, default to the `register` register
@@ -19,7 +25,12 @@ app.get('/:register?', async (req, res, next) => {
     register = req.params.register
   }
   try {
-    request(`https://www.registers.service.gov.uk/registers/${register}/download-json`, function (error, response, body) {
+    const cacheStaleTimeout = 250; // minutes
+    var requestOptions = {
+      url: `https://www.registers.service.gov.uk/registers/${register}/download-json`,
+      ttl: cacheStaleTimeout * 60 * 1000
+    }
+    cachedRequest(requestOptions, function (error, response, body) {
       if (error) {
         throw error
       }
@@ -34,6 +45,7 @@ app.get('/:register?', async (req, res, next) => {
           }
           return item
         })
+        console.timeEnd('register')
         return res.json(jsonOutput)
       } else {
         return res.sendStatus(404)
