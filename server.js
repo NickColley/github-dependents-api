@@ -9,6 +9,37 @@ cachedRequest.setCacheDirectory(os.tmpdir())
 
 const app = express();
 
+const cacheStaleTimeout = 250; // minutes
+
+function getRegister (register) {
+ var requestOptions = {
+    url: `https://www.registers.service.gov.uk/registers/${register}/download-json`,
+    ttl: cacheStaleTimeout * 60 * 1000
+  }
+  cachedRequest(requestOptions, function (error, response, body) {
+    if (error) {
+      throw error
+    }
+    if (response && response.statusCode === 200) {
+      var parsedJson = JSON.parse(body)
+      var jsonKeys = Object.keys(parsedJson)
+      var jsonOutput = jsonKeys.map(key => {
+        var item = parsedJson[key].item[0]
+        // If default, wack a useful field to get to other registers.
+        if (isRoot) {
+          item['__URL__'] = `https://registers.glitch.me/${item.register}`
+        }
+        return item
+      })
+      return
+      console.timeEnd('register')
+      return res.json(jsonOutput)
+    } else {
+      return res.sendStatus(404)
+    }
+  });
+}
+
 // Pretty print JSON
 app.set('json spaces', 2); 
 
@@ -25,7 +56,6 @@ app.get('/:register?', async (req, res, next) => {
     register = req.params.register
   }
   try {
-    const cacheStaleTimeout = 250; // minutes
     var requestOptions = {
       url: `https://www.registers.service.gov.uk/registers/${register}/download-json`,
       ttl: cacheStaleTimeout * 60 * 1000
