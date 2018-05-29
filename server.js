@@ -48,7 +48,8 @@ app.use(cors());
 
 app.get('/:register?', async (req, res, next) => {
   console.time('register')
-  const isRoot = !req.params.register
+  const input = req.params.register
+  const isRoot = !input
   let register
   // If no param set, default to the `register` register
   if (isRoot) {
@@ -61,12 +62,13 @@ app.get('/:register?', async (req, res, next) => {
       if (response === 404) {
         return getRegister('register', false, (response) => {
           console.log(response)
-          var input = 'registers';
           var list = response;
           var key = 'register';
-          const youMeant = didYouMean(input, list, key);
+          const youMeant = 'blah' // didYouMean(input, list, key)
+          const meantResponse = `<!DOCTYPE html><html lang="en"><head></head><body>Did you mean? “${youMeant}” If so, try <a href="https://registers.glitch.me/${youMeant}">https://registers.glitch.me/${youMeant}</a>.</body></html>`
           if (youMeant) {
-            return res.status(404).send(youMeant);
+            // res.set('Content-Type', 'text/html');
+            return res.status(200).send(meantResponse);
           }
          return res.sendStatus(404)
         })
