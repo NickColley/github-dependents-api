@@ -10,9 +10,13 @@ app.set('json spaces', 2);
 app.use(cors());
 
 app.get('/:register?', async (req, res, next) => {
-  const register = req.params.register
-  if (!register) {
-    register = 'registers'
+  const isRoot = !req.params.register
+  let register
+  // If no param set, default to the `register` register
+  if (isRoot) {
+    register = 'register'
+  } else {
+    register = req.params.register
   }
   try {
     request(`https://www.registers.service.gov.uk/registers/${register}/download-json`, function (error, response, body) {
@@ -23,7 +27,12 @@ app.get('/:register?', async (req, res, next) => {
         var parsedJson = JSON.parse(body)
         var jsonKeys = Object.keys(parsedJson)
         var jsonOutput = jsonKeys.map(key => {
-          return parsedJson[key].item[0]
+          var item = parsedJson[key].item[0]
+          // If default, wack a useful field to get to other registers.
+          if (isRoot) {
+            item['__URL__'] = `https://registers.glitch.me/${item.register}`
+          }
+          return item
         })
         return res.json(jsonOutput)
       } else {
