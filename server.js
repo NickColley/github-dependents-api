@@ -5,6 +5,8 @@ const cache = require('./db/cache');
 const feedFetch = require('./fetch-feed-promise');
 const CronJob = require('cron').CronJob;
 const Promise = require("bluebird");
+    var request = require('request');
+
 Promise.promisifyAll(cache);
 
 const RSS_FEED_LIST = 'rssFeedList';
@@ -29,31 +31,20 @@ const RSS_FEED_LIST = 'rssFeedList';
 const app = express();
 
 app.use(cors());
-app.get('/rss/:data(*)', async (req, res, next) => {
-  if (req.params.data === RSS_FEED_LIST) {
-    return next(new Error('Incorrect parameter'));
-  }
-  
-  const processData = (data) => {
-    let parsed = JSON.parse(data);
-    const limit = +req.query.limit;
-    if (!isNaN(limit)) {
-      parsed = parsed.slice(0, limit);
-    }
-    res.json(parsed);
-  };
-  
+app.get('/', async (req, res, next) => {
   try {
-    // const {feeds} = await cache.findOneAsync({key: RSS_FEED_LIST});
-    // if (feeds.indexOf(req.params.data) > -1) {
-    //   const {data} = await cache.findOneAsync({key: req.params.data});
-    //   return processData(data);
-    // } else {
-      // await cache.updateAsync({key: RSS_FEED_LIST}, {$push: {feeds: req.params.data}});
-      const data = await feedFetch.fetch(`https://medium.com/${req.params.data}`);
-      // await cache.insertAsync({key: req.params.data, data});
-      return processData(data);
-    // }
+    request('https://www.registers.service.gov.uk/registers/allergen/download-json', function (error, response, body) {
+      if (error ) {
+        throw error
+      }
+      if (
+      console.log('error:', error); // Print the error if one occurred
+      console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
+      console.log('body:', body); // Print the HTML for the Google homepage.
+      
+      var responseJSON = { foo: 'bar' }
+      return res.json(responseJSON)
+    });
   } catch (err) {
     return next(err);
   }

@@ -17,7 +17,8 @@
     "rsj": "^0.0.4",
     "nedb-core": "^3.0.6",
     "cron": "^1.2.1",
-    "bluebird": "^3.5.0"
+    "bluebird": "^3.5.0",
+    "request": "^2.87.0"
   },
   "engines": {
     "node": "7.x"
