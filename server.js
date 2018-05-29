@@ -69,7 +69,7 @@ function renderHtml (title, message) {
 // Pretty print JSON
 app.set('json spaces', 2); 
 
-// app.use(cors());
+app.use(cors());
 
 app.get('/:register?', async (req, res, next) => {
   console.time('register')
@@ -85,19 +85,19 @@ app.get('/:register?', async (req, res, next) => {
   try {
     getRegister(register, isRoot, (response) => {
       if (response === 404) {
-        return getRegister('register', false, (response) => {
-          console.log(response)
-          var list = response;
-          var key = 'register';
-          const youMeant = didYouMean(input, list, key)
-          const meantResponse = renderHtml(
-            `Did you mean “${youMeant}”?`,
-            `Did you mean <strong>“<a href="https://registers.glitch.me/${youMeant}">${youMeant}</a>”</strong>?`
-          )
+        // If we don't find a register, check the '
+        return getRegister('register', false, (json) => {
+          let response
+          const youMeant = didYouMean(input, json, 'register')
           if (youMeant) {
-            return res.status(404).send(meantResponse);
+            response = renderHtml(
+              `Did you mean “${youMeant}”?`,
+              `Did you mean <strong>“<a href="https://registers.glitch.me/${youMeant}">${youMeant}</a>”</strong>?`
+            )
+          } else {
+            response = renderHtml('Not found', 'Not found')
           }
-          return res.status(404).send(renderHtml('Not found', 'Not found'));
+          return res.status(404).send(response);
         })
       }
       return res.json(response)
@@ -107,18 +107,20 @@ app.get('/:register?', async (req, res, next) => {
   }
 });
 
-// Setup the api
+/// Setup the api
 const server = app.listen(process.env.PORT || 3000, () => {
   console.log('Listening on port ' + server.address().port);
 });
 
+
 app.get('/', (req, res, next) => {
   res.send('https://www.registers.service.gov.uk/registers');
 });
-
 app.use((err, req, res, next) => {
   console.error(err.stack)
-  res.status(500).send('Something broke!')
+  res.status(500).send(
+    renderHtml('500: Internal server error', '500: Internal server error')
+  )                  
 });
 
 module.exports = app;
