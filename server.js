@@ -31,19 +31,20 @@ const RSS_FEED_LIST = 'rssFeedList';
 const app = express();
 
 app.use(cors());
-app.get('/', async (req, res, next) => {
+app.get('/:register', async (req, res, next) => {
+  const register = req.params.register
+  if (!register) {
+    return next(new Error('No register selected'));
+  }
   try {
-    request('https://www.registers.service.gov.uk/registers/allergen/download-json', function (error, response, body) {
-      if (error ) {
+    request(`https://www.registers.service.gov.uk/registers/${register}/download-json`, function (error, response, body) {
+      if (error) {
         throw error
       }
-      if (
-      console.log('error:', error); // Print the error if one occurred
-      console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
-      console.log('body:', body); // Print the HTML for the Google homepage.
-      
-      var responseJSON = { foo: 'bar' }
-      return res.json(responseJSON)
+      if (response && response.statusCode === 200) {
+        var parsedJson = JSON.parse(body)
+        return res.json(parsedJson)
+      }
     });
   } catch (err) {
     return next(err);
