@@ -26,12 +26,12 @@ function getRegister (register, addURL, callback) {
       var parsedJson = JSON.parse(body)
       var jsonKeys = Object.keys(parsedJson)
       var jsonOutput = jsonKeys.map(key => {
-        var item = parsedJson[key]
+        var entry = parsedJson[key]
         // If default, wack a useful field to get to other registers.
         if (addURL) {
-          item['__URL__'] = `https://registers.glitch.me/${item.register}`
+          entry['url'] = `https://registers.glitch.me/${entry.item[0].register}`
         }
-        return item
+        return entry
       })
       console.timeEnd('register')
       return callback(jsonOutput)
