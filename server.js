@@ -7,8 +7,6 @@ const request = require('request');
 const cachedRequest = require('cached-request')(request)
 cachedRequest.setCacheDirectory(os.tmpdir())
 
-const didYouMean = require('didyoumean')
-
 const app = express();
 
 const cacheStaleTimeout = 250; // minutes
