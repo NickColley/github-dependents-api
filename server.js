@@ -13,9 +13,9 @@ const app = express();
 
 const cacheStaleTimeout = 250; // minutes
 
-function getRegister (register, addURL, callback) {
+function getContentItem (path, addURL, callback) {
  var requestOptions = {
-    url: `https://www.registers.service.gov.uk/registers/${register}/download-json`,
+    url: `https://www.gov.uk/api/content/${path}`,
     ttl: cacheStaleTimeout * 60 * 1000
   }
   cachedRequest(requestOptions, function (error, response, body) {
@@ -24,17 +24,7 @@ function getRegister (register, addURL, callback) {
     }
     if (response && response.statusCode === 200) {
       var parsedJson = JSON.parse(body)
-      var jsonKeys = Object.keys(parsedJson)
-      var jsonOutput = jsonKeys.map(key => {
-        var entry = parsedJson[key]
-        // If default, wack a useful field to get to other registers.
-        if (addURL) {
-          entry['url'] = `https://registers.glitch.me/${entry.item[0].register}`
-        }
-        return entry
-      })
-      console.timeEnd('register')
-      return callback(jsonOutput)
+      return callback(parsedJson)
     } else {
       return callback(404)
     }
@@ -71,34 +61,20 @@ app.set('json spaces', 2);
 
 app.use(cors());
 
-app.get('/:register?', async (req, res, next) => {
-  console.time('register')
-  const input = req.params.register
+app.get('/:path?', async (req, res, next) => {
+  const input = req.params.path
   const isRoot = !input
-  let register
-  // If no param set, default to the `register` register
+  let path
+  // If no param set, default to the `path` path
   if (isRoot) {
-    register = 'register'
+    path = '/'
   } else {
-    register = req.params.register
+    path = req.params.path
   }
   try {
-    getRegister(register, isRoot, (response) => {
+    getContentItem(path, isRoot, (response) => {
       if (response === 404) {
-        // If we don't find a register, check the '
-        return getRegister('register', false, (json) => {
-          let response
-          const youMeant = didYouMean(input, json, 'register')
-          if (youMeant) {
-            response = renderHtml(
-              `Did you mean “${youMeant}”?`,
-              `Did you mean <strong>“<a href="https://registers.glitch.me/${youMeant}">${youMeant}</a>”</strong>?`
-            )
-          } else {
-            response = renderHtml('Not found', 'Not found')
-          }
-          return res.status(404).send(response);
-        })
+        return res.status(404).send(response);
       }
       return res.json(response)
     })
@@ -112,10 +88,6 @@ const server = app.listen(process.env.PORT || 3000, () => {
   console.log('Listening on port ' + server.address().port);
 });
 
-
-app.get('/', (req, res, next) => {
-  res.send('https://www.registers.service.gov.uk/registers');
-});
 app.use((err, req, res, next) => {
   console.error(err.stack)
   res.status(500).send(
