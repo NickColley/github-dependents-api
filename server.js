@@ -15,7 +15,7 @@ const cacheStaleTimeout = 10; // minutes
 
 function getContentItem (path, addURL, callback) {
  var requestOptions = {
-    url: `https://github.com/alphagov/govuk-frontend/network/dependents?dependent_type=REPOSITORY`,
+    url: `https://github.com/${path}?dependent_type=REPOSITORY`,
     ttl: cacheStaleTimeout * 60 * 1000
   }
   cachedRequest(requestOptions, function (error, response, body) {
@@ -42,30 +42,32 @@ app.get('/:path?', async (req, res, next) => {
   } else {
     path = req.params.path
   }
+  path = 'alphagov/govuk-frontend/network/dependents'
   try {
     getContentItem(path, isRoot, (response) => {
       if (response === 404) {
         return res.status(404).send(response);
       }
-      return res.send(scrapePage(response))
+      const json = scrapePage(response, { path })
+      return res.json(json)
     })
   } catch (err) {
     return next(err);
   }
 });
 
-function scrapePage (response) {
+function scrapePage (response, { path }) {
   let $ = cheerio.load(response)
   const $dependants = $('#dependents')
   const totalDependants =
       parseInt(
-          $dependants.find("[href='/alphagov/govuk-frontend/network/dependents?dependent_type=REPOSITORY']")
+          $dependants.find(`[href='/${path}?dependent_type=REPOSITORY']`)
             .text()
             .trim()
             .match('[0-9]*')[0], 10)
   const totalPackages =
       parseInt(
-          $dependants.find("[href='/alphagov/govuk-frontend/network/dependents?dependent_type=PACKAGE']")
+          $dependants.find(`[href='/${path}?dependent_type=PACKAGE']`)
             .text()
             .trim()
             .match('[0-9]*')[0], 10)
@@ -73,21 +75,25 @@ function scrapePage (response) {
   const $entries = $dependants.find('.Box-row')
   const entries = $entries.map((index, entry) => {
     let $entry = $(entry)
-    let avatar = $entry.find('.avatar').attr('src');
+    let avatarImage = $entry.find('.avatar').attr('src');
     let org = $entry.find('[href]:not([class])').text().trim();
-    let repo = 'epao-account'
-    let stars = 0
-    let forks = 0
+    let repo = $entry.find('[href].text-bold').text().trim();
+    let stars = parseInt($entry.find('.octicon-star').parent().text().trim(), 10)
+    let forks = parseInt($entry.find('.octicon-repo-forked').parent().text().trim(), 10)
     return {
-      avatar,
+      avatarImage,
       org,
       repo,
       stars,
       forks
     }
   }).get()
-  console.log(totalDependants, totalPackages, $entries.length, entries)
-  return response
+
+  return {
+    totalDependants,
+    totalPackages,
+    entries
+  }
 }
 
 /// Setup the api
