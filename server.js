@@ -13,9 +13,9 @@ const app = express();
 
 const cacheStaleTimeout = 10; // minutes
 
-function getContentItem (path, addURL, callback) {
+function getContentItem (path, callback) {
  var requestOptions = {
-    url: `https://github.com/${path}?dependent_type=REPOSITORY`,
+    url: `https://github.com${path}?dependent_type=REPOSITORY`,
     ttl: cacheStaleTimeout * 60 * 1000
   }
   cachedRequest(requestOptions, function (error, response, body) {
@@ -32,23 +32,17 @@ function getContentItem (path, addURL, callback) {
 
 app.use(cors());
 
-app.get('/:path?', async (req, res, next) => {
-  const input = req.params.path
-  const isRoot = !input
-  let path
-  // If no param set, default to the `path` path
-  if (isRoot) {
-    path = '/'
-  } else {
-    path = req.params.path
-  }
-  path = 'alphagov/govuk-frontend/network/dependents'
+app.get('*', async (req, res, next) => {
+  let { url, path } = req
+  // path = 'alphagov/govuk-frontend/network/dependents'
+  path = 'alphagov/govuk_elements/network/dependents'
   try {
-    getContentItem(path, isRoot, (response) => {
+    getContentItem(url, (response) => {
       if (response === 404) {
         return res.status(404).send(response);
       }
       const json = scrapePage(response, { path })
+      console.log(json)
       return res.json(json)
     })
   } catch (err) {
@@ -57,17 +51,18 @@ app.get('/:path?', async (req, res, next) => {
 });
 
 function scrapePage (response, { path }) {
+  console.log(path)
   let $ = cheerio.load(response)
   const $dependants = $('#dependents')
   const totalDependants =
       parseInt(
-          $dependants.find(`[href='/${path}?dependent_type=REPOSITORY']`)
+          $dependants.find(`[href='${path}?dependent_type=REPOSITORY']`)
             .text()
             .trim()
             .match('[0-9]*')[0], 10)
   const totalPackages =
       parseInt(
-          $dependants.find(`[href='/${path}?dependent_type=PACKAGE']`)
+          $dependants.find(`[href='${path}?dependent_type=PACKAGE']`)
             .text()
             .trim()
             .match('[0-9]*')[0], 10)
