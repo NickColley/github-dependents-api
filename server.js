@@ -34,14 +34,15 @@ app.use(cors());
 
 app.get('*', async (req, res, next) => {
   const { url, path } = req
-  const dependantType = req.query['dependent_type'] || 'REPOSITORY'
-  const perPage = parseInt(req.query['per_page'], 10) || 30
+  const dependantType = (req.query['type'] || 'repository').toUpperCase()
+  const limit = parseInt(req.query['limit'], 10) || 30
   if (url === '/favicon.ico') {
     return res.send('')
   }
   try {
+    console.log(`https://github.com${path}/network/dependents?dependant_type=${dependantType}&limit=${limit}`)
     recurseDependants(
-      { res, url: `https://github.com${url}`, path, dependantType, perPage },
+      { res, url: `https://github.com${path}/network/dependents?dependant_type=${dependantType}&limit=${limit}`, path, dependantType, limit },
       (err, data) => {
       if (err === 404) {
         return res.status(404).send(data);
@@ -53,14 +54,23 @@ app.get('*', async (req, res, next) => {
   }
 });
 
-function recurseDependants ({ res, url, path, dependantType, perPage }, callback) {
+function recurseDependants ({ res, url, path, dependantType, limit }, callback) {
   getGithubPage(url, (response) => {
     if (response === 404) {
       return callback(404, null);
     }
-    let data = scrapePage(response, { path, dependantType, perPage })
+    let data = scrapePage(response, { path, dependantType, limit })
+    const hasReachedLimit = data.entriesOnPage >= limit;
+    if (hasReachedLimit) {
+      data.entriesOnPage = limit
+      data.entries = data.entries.slice(0, limit)
+      return callback(null, data)
+    }
     const moreResultsNeeded = (data.totalDependants > data.entriesOnPage) && (data.nextPageUrl !== null)
     if (!moreResultsNeeded) {
+      delete data.nextPageUrl
+      delete data.previousPageUrl
+      console.log(data)
       return callback(null, data)
     }
     let deepData = recurseDependants({
@@ -68,7 +78,7 @@ function recurseDependants ({ res, url, path, dependantType, perPage }, callback
       url: data.nextPageUrl.replace('github-dependants.glitch.me', 'github.com'),
       path,
       dependantType,
-      perPage
+      limit
     }, (err, deepData) => {
       if (err) {
         throw new Error('deep failed')
@@ -80,18 +90,18 @@ function recurseDependants ({ res, url, path, dependantType, perPage }, callback
   })
 }
 
-function scrapePage (response, { path, dependantType, perPage }) {
+function scrapePage (response, { path, dependantType, limit }) {
   let $ = cheerio.load(response)
   const $dependants = $('#dependents')
   const totalDependants =
       parseInt(
-          $dependants.find(`[href='${path}?dependent_type=REPOSITORY']`)
+          $dependants.find(`[href='${path}/network/dependents?dependent_type=REPOSITORY']`)
             .text()
             .trim()
             .match('[0-9]*')[0], 10)
   const totalPackages =
       parseInt(
-          $dependants.find(`[href='${path}?dependent_type=PACKAGE']`)
+          $dependants.find(`[href='${path}/network/dependents?dependent_type=PACKAGE']`)
             .text()
             .trim()
             .match('[0-9]*')[0], 10)
@@ -99,12 +109,12 @@ function scrapePage (response, { path, dependantType, perPage }) {
   
   const previousPageUrl =
         ($dependants
-          .find(`[href^='https://github.com${path}?dependent_type=${dependantType}&dependents_before']`)
+          .find(`[href^='https://github.com${path}/network/dependents?dependent_type=${dependantType}&dependents_before']`)
           .attr('href') || '')
           .replace('github.com', 'github-dependants.glitch.me') || null
   const nextPageUrl =
         ($dependants
-          .find(`[href^='https://github.com${path}?dependent_type=${dependantType}&dependents_after']`)
+          .find(`[href^='https://github.com${path}/network/dependents?dependent_type=${dependantType}&dependents_after']`)
           .attr('href') || '')
           .replace('github.com', 'github-dependants.glitch.me') || null
   
@@ -123,12 +133,12 @@ function scrapePage (response, { path, dependantType, perPage }) {
       stars,
       forks
     }
-  }).get().slice(0, perPage)
+  }).get()
   
   const entriesOnPage = entries.length
 
   return {
-    perPage,
+    limit,
     entriesOnPage,
     totalDependants,
     totalPackages,
