@@ -40,36 +40,14 @@ app.get('*', async (req, res, next) => {
     return res.send('')
   }
   try {
-    recurseDependants (
+    recurseDependants(
       { res, url: `https://github.com${url}`, path, dependantType, perPage },
       (err, data) => {
-      // console.log(err, data)
-      return res.send(String(data.entries.length))
+      if (err === 404) {
+        return res.status(404).send(data);
+      }
+      return res.send(data)
     })
-    // getGithubPage(`https://github.com${url}`, (response) => {
-    //   if (response === 404) {
-    //     return res.status(404).send(response);
-    //   }
-    //   let data = scrapePage(response, { path, dependantType, perPage })
-    //   const moreResultsNeeded = (data.totalDependants < perPage) && (data.nextPageUrl !== null)
-    //   let combinedEntries = data.entries
-    //   console.log(moreResultsNeeded)
-    //   if (moreResultsNeeded) {
-    //     getGithubPage(data.nextPageUrl.replace('github-dependants.glitch.me', 'github.com'), (response) => {
-    //       if (response === 404) {
-    //         return res.status(404).send(response);
-    //       }
-    //       let deepData = scrapePage(response, { path, dependantType, perPage })
-    //       // console.log(data)
-    //       console.log(combinedEntries.length)
-    //       combinedEntries = combinedEntries.concat(deepData.entries)
-    //       data.entriesOnPage = combinedEntries.length
-    //       return res.json(data)
-    //     })
-    //   } else {
-    //     return res.json(data)
-    //   }
-    // })
   } catch (err) {
     return next(err);
   }
@@ -81,9 +59,7 @@ function recurseDependants ({ res, url, path, dependantType, perPage }, callback
       return callback(404, null);
     }
     let data = scrapePage(response, { path, dependantType, perPage })
-    const moreResultsNeeded = (data.totalDependants < data.entriesOnPage) && (data.nextPageUrl !== null)
-    let combinedEntries = data.entries
-    console.log(moreResultsNeeded)
+    const moreResultsNeeded = (data.totalDependants > data.entriesOnPage) && (data.nextPageUrl !== null)
     if (!moreResultsNeeded) {
       return callback(null, data)
     }
@@ -93,9 +69,12 @@ function recurseDependants ({ res, url, path, dependantType, perPage }, callback
       path,
       dependantType,
       perPage
-    }, () => {
-      combinedEntries = combinedEntries.concat(deepData.entries)
-      data.entriesOnPage = combinedEntries.length
+    }, (err, deepData) => {
+      if (err) {
+        throw new Error('deep failed')
+      }
+      data.entries = data.entries.concat(deepData.entries)
+      data.entriesOnPage = data.entries.length
       return callback(null, data)
     })
   })
