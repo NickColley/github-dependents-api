@@ -44,26 +44,50 @@ app.get('*', async (req, res, next) => {
       if (response === 404) {
         return res.status(404).send(response);
       }
-      const data = scrapePage(response, { path, dependantType, perPage })
+      let data = scrapePage(response, { path, dependantType, perPage })
       const moreResultsNeeded = (data.totalDependants < perPage) && (data.nextPageUrl !== null)
-      let entries = data.entries
+      let combinedEntries = data.entries
       console.log(moreResultsNeeded)
       if (moreResultsNeeded) {
         getGithubPage(data.nextPageUrl.replace('github-dependants.glitch.me', 'github.com'), (response) => {
           if (response === 404) {
             return res.status(404).send(response);
           }
-          const data = scrapePage(response, { path, dependantType, perPage })
-          console.log(data)
+          let deepData = scrapePage(response, { path, dependantType, perPage })
+          // console.log(data)
+          console.log(combinedEntries.length)
+          combinedEntries = combinedEntries.concat(deepData.entries)
+          data.entriesOnPage = combinedEntries.length
+          return res.json(data)
         })
+      } else {
+        return res.json(data)
       }
-      console.log(entries)
-      return res.json(data)
     })
   } catch (err) {
     return next(err);
   }
 });
+
+function recurseDependants ({ res, url, path, dependantType, perPage}) {
+  getGithubPage(`https://github.com${url}`, (response) => {
+    if (response === 404) {
+      return res.status(404).send(response);
+    }
+    let data = scrapePage(response, { path, dependantType, perPage })
+    const moreResultsNeeded = (data.totalDependants < perPage) && (data.nextPageUrl !== null)
+    let combinedEntries = data.entries
+    console.log(moreResultsNeeded)
+    if (moreResultsNeeded) {
+      let deepData = recurseDependants(data.nextPageUrl.replace('github-dependants.glitch.me', 'github.com'))
+      combinedEntries = combinedEntries.concat(deepData.entries)
+      data.entriesOnPage = combinedEntries.length
+      return data
+    } else {
+      return data
+    }
+  })
+}
 
 function scrapePage (response, { path, dependantType, perPage }) {
   let $ = cheerio.load(response)
