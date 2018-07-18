@@ -49,7 +49,6 @@ app.get('*', async (req, res, next) => {
       }
       console.log(response)
       const json = scrapePage(response, path)
-      console.log(json)
       return res.json(json)
     })
   } catch (err) {
@@ -81,12 +80,16 @@ function scrapePage (response, path) {
     let repo = $entry.find('[href].text-bold').text().trim();
     let stars = parseInt($entry.find('.octicon-star').parent().text().trim(), 10)
     let forks = parseInt($entry.find('.octicon-repo-forked').parent().text().trim(), 10)
+    let previous = false
+    let next = false
     return {
       avatarImage,
       org,
       repo,
       stars,
-      forks
+      forks,
+      previous,
+      next
     }
   }).get()
 
