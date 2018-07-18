@@ -13,9 +13,9 @@ const app = express();
 
 const cacheStaleTimeout = 10; // minutes
 
-function getContentItem (path, callback) {
+function getGithubPage (url, callback) {
  var requestOptions = {
-    url: `https://github.com${path}?dependent_type=REPOSITORY`,
+    url: `https://github.com${url}`,
     ttl: cacheStaleTimeout * 60 * 1000
   }
   cachedRequest(requestOptions, function (error, response, body) {
@@ -34,14 +34,21 @@ app.use(cors());
 
 app.get('*', async (req, res, next) => {
   let { url, path } = req
-  // path = 'alphagov/govuk-frontend/network/dependents'
-  path = 'alphagov/govuk_elements/network/dependents'
+  if (url === '/favicon.ico') {
+    return res.send('')
+  }
+  // console.log('---')
+  // console.log(url)
+  // console.log('===')
+  // console.log(path)
+  // console.log('---')
   try {
-    getContentItem(url, (response) => {
+    getGithubPage(url, (response) => {
       if (response === 404) {
         return res.status(404).send(response);
       }
-      const json = scrapePage(response, { path })
+      console.log(response)
+      const json = scrapePage(response, path)
       console.log(json)
       return res.json(json)
     })
@@ -50,8 +57,7 @@ app.get('*', async (req, res, next) => {
   }
 });
 
-function scrapePage (response, { path }) {
-  console.log(path)
+function scrapePage (response, path) {
   let $ = cheerio.load(response)
   const $dependants = $('#dependents')
   const totalDependants =
