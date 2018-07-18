@@ -56,19 +56,37 @@ app.get('/:path?', async (req, res, next) => {
 
 function scrapePage (response) {
   let $ = cheerio.load(response)
+  const $dependants = $('#dependents')
   const totalDependants =
       parseInt(
-          $("[href='/alphagov/govuk-frontend/network/dependents?dependent_type=REPOSITORY']")
+          $dependants.find("[href='/alphagov/govuk-frontend/network/dependents?dependent_type=REPOSITORY']")
             .text()
             .trim()
             .match('[0-9]*')[0], 10)
   const totalPackages =
       parseInt(
-          $("[href='/alphagov/govuk-frontend/network/dependents?dependent_type=PACKAGE']")
+          $dependants.find("[href='/alphagov/govuk-frontend/network/dependents?dependent_type=PACKAGE']")
             .text()
             .trim()
             .match('[0-9]*')[0], 10)
-  console.log(totalDependants, totalPackages)
+  
+  const $entries = $dependants.find('.Box-row')
+  const entries = $entries.map((index, entry) => {
+    let $entry = $(entry)
+    let avatar = $entry.find('.avatar').attr('src');
+    let org = $entry.find('[href]:not([class])').text().trim();
+    let repo = 'epao-account'
+    let stars = 0
+    let forks = 0
+    return {
+      avatar,
+      org,
+      repo,
+      stars,
+      forks
+    }
+  }).get()
+  console.log(totalDependants, totalPackages, $entries.length, entries)
   return response
 }
 
