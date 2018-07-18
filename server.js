@@ -40,52 +40,64 @@ app.get('*', async (req, res, next) => {
     return res.send('')
   }
   try {
-    getGithubPage(`https://github.com${url}`, (response) => {
-      if (response === 404) {
-        return res.status(404).send(response);
-      }
-      let data = scrapePage(response, { path, dependantType, perPage })
-      const moreResultsNeeded = (data.totalDependants < perPage) && (data.nextPageUrl !== null)
-      let combinedEntries = data.entries
-      console.log(moreResultsNeeded)
-      if (moreResultsNeeded) {
-        getGithubPage(data.nextPageUrl.replace('github-dependants.glitch.me', 'github.com'), (response) => {
-          if (response === 404) {
-            return res.status(404).send(response);
-          }
-          let deepData = scrapePage(response, { path, dependantType, perPage })
-          // console.log(data)
-          console.log(combinedEntries.length)
-          combinedEntries = combinedEntries.concat(deepData.entries)
-          data.entriesOnPage = combinedEntries.length
-          return res.json(data)
-        })
-      } else {
-        return res.json(data)
-      }
+    recurseDependants (
+      { res, url: `https://github.com${url}`, path, dependantType, perPage },
+      (err, data) => {
+      // console.log(err, data)
+      return res.send(String(data.entries.length))
     })
+    // getGithubPage(`https://github.com${url}`, (response) => {
+    //   if (response === 404) {
+    //     return res.status(404).send(response);
+    //   }
+    //   let data = scrapePage(response, { path, dependantType, perPage })
+    //   const moreResultsNeeded = (data.totalDependants < perPage) && (data.nextPageUrl !== null)
+    //   let combinedEntries = data.entries
+    //   console.log(moreResultsNeeded)
+    //   if (moreResultsNeeded) {
+    //     getGithubPage(data.nextPageUrl.replace('github-dependants.glitch.me', 'github.com'), (response) => {
+    //       if (response === 404) {
+    //         return res.status(404).send(response);
+    //       }
+    //       let deepData = scrapePage(response, { path, dependantType, perPage })
+    //       // console.log(data)
+    //       console.log(combinedEntries.length)
+    //       combinedEntries = combinedEntries.concat(deepData.entries)
+    //       data.entriesOnPage = combinedEntries.length
+    //       return res.json(data)
+    //     })
+    //   } else {
+    //     return res.json(data)
+    //   }
+    // })
   } catch (err) {
     return next(err);
   }
 });
 
-function recurseDependants ({ res, url, path, dependantType, perPage}) {
-  getGithubPage(`https://github.com${url}`, (response) => {
+function recurseDependants ({ res, url, path, dependantType, perPage }, callback) {
+  getGithubPage(url, (response) => {
     if (response === 404) {
-      return res.status(404).send(response);
+      return callback(404, null);
     }
     let data = scrapePage(response, { path, dependantType, perPage })
-    const moreResultsNeeded = (data.totalDependants < perPage) && (data.nextPageUrl !== null)
+    const moreResultsNeeded = (data.totalDependants < data.entriesOnPage) && (data.nextPageUrl !== null)
     let combinedEntries = data.entries
     console.log(moreResultsNeeded)
-    if (moreResultsNeeded) {
-      let deepData = recurseDependants(data.nextPageUrl.replace('github-dependants.glitch.me', 'github.com'))
+    if (!moreResultsNeeded) {
+      return callback(null, data)
+    }
+    let deepData = recurseDependants({
+      res,
+      url: data.nextPageUrl.replace('github-dependants.glitch.me', 'github.com'),
+      path,
+      dependantType,
+      perPage
+    }, () => {
       combinedEntries = combinedEntries.concat(deepData.entries)
       data.entriesOnPage = combinedEntries.length
-      return data
-    } else {
-      return data
-    }
+      return callback(null, data)
+    })
   })
 }
 
