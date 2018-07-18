@@ -3,17 +3,19 @@ const os = require('os')
 const express = require('express');
 const cors = require('cors');
 
+const cheerio = require('cheerio');
+
 const request = require('request');
 const cachedRequest = require('cached-request')(request)
 cachedRequest.setCacheDirectory(os.tmpdir())
 
 const app = express();
 
-const cacheStaleTimeout = 250; // minutes
+const cacheStaleTimeout = 10; // minutes
 
 function getContentItem (path, addURL, callback) {
  var requestOptions = {
-    url: `https://www.gov.uk/api/content/${path}`,
+    url: `https://github.com/alphagov/govuk-frontend/network/dependents?dependent_type=REPOSITORY`,
     ttl: cacheStaleTimeout * 60 * 1000
   }
   cachedRequest(requestOptions, function (error, response, body) {
@@ -21,41 +23,12 @@ function getContentItem (path, addURL, callback) {
       throw error
     }
     if (response && response.statusCode === 200) {
-      var parsedJson = JSON.parse(body)
-      return callback(parsedJson)
+      return callback(body)
     } else {
       return callback(404)
     }
   });
 }
-
-function renderHtml (title, message) {
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <title>${title}</title>
-  <style>
-    body {
-      font-size: 20px;
-      font-family: Georgia, serif;
-      padding: 1em;
-    }
-    h1 {
-      font-weight: normal;
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <h1>${message}</h1>
-  </main>
-</body>
-</html>`.trim()
-}
-
-// Pretty print JSON
-app.set('json spaces', 2); 
 
 app.use(cors());
 
@@ -74,7 +47,9 @@ app.get('/:path?', async (req, res, next) => {
       if (response === 404) {
         return res.status(404).send(response);
       }
-      return res.json(response)
+      let $html = cheerio.load(response)
+      console.log($html.html())
+      return res.send(response)
     })
   } catch (err) {
     return next(err);
@@ -89,7 +64,7 @@ const server = app.listen(process.env.PORT || 3000, () => {
 app.use((err, req, res, next) => {
   console.error(err.stack)
   res.status(500).send(
-    renderHtml('500: Internal server error', '500: Internal server error')
+    '500: Internal server error', '500: Internal server error'
   )                  
 });
 

@@ -12,7 +12,8 @@
     "cors": "^2.8.3",
     "request": "^2.87.0",
     "cached-request": "^1.1.4",
-    "didyoumean": "^1.2.1"
+    "didyoumean": "^1.2.1",
+    "cheerio": "^0.22.0"
   },
   "license": "MIT"
 }
