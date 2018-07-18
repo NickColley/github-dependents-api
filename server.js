@@ -11,7 +11,7 @@ cachedRequest.setCacheDirectory(os.tmpdir())
 
 const app = express();
 
-const cacheStaleTimeout = 10; // minutes
+const cacheStaleTimeout = 0; // minutes
 
 function getGithubPage (url, callback) {
  var requestOptions = {
@@ -34,6 +34,8 @@ app.use(cors());
 
 app.get('*', async (req, res, next) => {
   let { url, path } = req
+  let dependantType = req.query['dependent_type']
+  console.log(dependantType)
   if (url === '/favicon.ico') {
     return res.send('')
   }
@@ -47,7 +49,6 @@ app.get('*', async (req, res, next) => {
       if (response === 404) {
         return res.status(404).send(response);
       }
-      console.log(response)
       const json = scrapePage(response, path)
       return res.json(json)
     })
@@ -72,6 +73,18 @@ function scrapePage (response, path) {
             .trim()
             .match('[0-9]*')[0], 10)
   
+  
+  const previousPageUrl =
+        ($dependants
+          .find(`[href^='https://github.com${path}?dependent_type=REPOSITORY&dependents_before']`)
+          .attr('href') || '')
+          .replace('github.com', 'github-dependants.glitch.me') || null
+  const nextPageUrl =
+        ($dependants
+          .find(`[href^='https://github.com${path}?dependent_type=REPOSITORY&dependents_after']`)
+          .attr('href') || '')
+          .replace('github.com', 'github-dependants.glitch.me') || null
+  
   const $entries = $dependants.find('.Box-row')
   const entries = $entries.map((index, entry) => {
     let $entry = $(entry)
@@ -80,22 +93,20 @@ function scrapePage (response, path) {
     let repo = $entry.find('[href].text-bold').text().trim();
     let stars = parseInt($entry.find('.octicon-star').parent().text().trim(), 10)
     let forks = parseInt($entry.find('.octicon-repo-forked').parent().text().trim(), 10)
-    let previous = false
-    let next = false
     return {
       avatarImage,
       org,
       repo,
       stars,
-      forks,
-      previous,
-      next
+      forks
     }
   }).get()
 
   return {
     totalDependants,
     totalPackages,
+    previousPageUrl,
+    nextPageUrl,
     entries
   }
 }
