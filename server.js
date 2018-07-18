@@ -47,14 +47,30 @@ app.get('/:path?', async (req, res, next) => {
       if (response === 404) {
         return res.status(404).send(response);
       }
-      let $html = cheerio.load(response)
-      console.log($html.html())
-      return res.send(response)
+      return res.send(scrapePage(response))
     })
   } catch (err) {
     return next(err);
   }
 });
+
+function scrapePage (response) {
+  let $ = cheerio.load(response)
+  const totalDependants =
+      parseInt(
+          $("[href='/alphagov/govuk-frontend/network/dependents?dependent_type=REPOSITORY']")
+            .text()
+            .trim()
+            .match('[0-9]*')[0], 10)
+  const totalPackages =
+      parseInt(
+          $("[href='/alphagov/govuk-frontend/network/dependents?dependent_type=PACKAGE']")
+            .text()
+            .trim()
+            .match('[0-9]*')[0], 10)
+  console.log(totalDependants, totalPackages)
+  return response
+}
 
 /// Setup the api
 const server = app.listen(process.env.PORT || 3000, () => {
