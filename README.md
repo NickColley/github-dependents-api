@@ -1,6 +1,6 @@
-?type=package or ?type=repository
+?type=package or ?type=repository (default repository)
 
-?limit=n
+?limit=n (default 100)
 
 example:
 

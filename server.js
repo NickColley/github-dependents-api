@@ -11,7 +11,7 @@ cachedRequest.setCacheDirectory(os.tmpdir())
 
 const app = express();
 
-const cacheStaleTimeout = 0; // minutes
+const cacheStaleTimeout = 100; // minutes
 
 function getGithubPage (url, callback) {
  var requestOptions = {
@@ -35,7 +35,7 @@ app.use(cors());
 app.get('*', async (req, res, next) => {
   const { url, path } = req
   const dependentType = (req.query['type'] || 'repository').toUpperCase()
-  const limit = parseInt(req.query['limit'], 10) || 10000
+  const limit = parseInt(req.query['limit'], 10) || 100
   if (url === '/favicon.ico') {
     return res.send('')
   }
@@ -47,7 +47,7 @@ app.get('*', async (req, res, next) => {
       if (err === 404) {
         return res.status(404).send(data);
       }
-      console.log(data.entries.length)
+  
       return res.send(data)
     })
   } catch (err) {
@@ -63,16 +63,12 @@ function recurseDependants ({ res, url, path, dependentType, limit }, callback) 
     let data = scrapePage(response, { path, dependentType, limit })
     const hasReachedLimit = data.entriesOnPage >= limit;
     if (hasReachedLimit) {
-      delete data.nextPageUrl
-      delete data.previousPageUrl
       data.entriesOnPage = limit
       data.entries = data.entries.slice(0, limit)
       return callback(null, data)
     }
     const moreResultsNeeded = (data.totalDependants > data.entriesOnPage) && (data.nextPageUrl !== null)
     if (!moreResultsNeeded) {
-      delete data.nextPageUrl
-      delete data.previousPageUrl
       return callback(null, data)
     }
     let deepData = recurseDependants({
@@ -100,14 +96,14 @@ function scrapePage (response, { path, dependentType, limit }) {
           $dependants.find(`[href='${path}/network/dependents?dependent_type=REPOSITORY']`)
             .text()
             .trim()
-            .replace(',', '')
+            .replace(/,/g, '')
             .match('[0-9]*')[0], 10)
   const totalPackages =
       parseInt(
           $dependants.find(`[href='${path}/network/dependents?dependent_type=PACKAGE']`)
             .text()
             .trim()
-            .replace(',', '')
+            .replace(/,/g, '')
             .match('[0-9]*')[0], 10)
   
   
