@@ -15,7 +15,7 @@ const cacheStaleTimeout = 0; // minutes
 
 function getGithubPage (url, callback) {
  var requestOptions = {
-    url: `https://github.com${url}`,
+    url,
     ttl: cacheStaleTimeout * 60 * 1000
   }
   cachedRequest(requestOptions, function (error, response, body) {
@@ -33,31 +33,39 @@ function getGithubPage (url, callback) {
 app.use(cors());
 
 app.get('*', async (req, res, next) => {
-  let { url, path } = req
-  let dependantType = req.query['dependent_type']
-  console.log(dependantType)
+  const { url, path } = req
+  const dependantType = req.query['dependent_type'] || 'REPOSITORY'
+  const perPage = parseInt(req.query['per_page'], 10) || 30
   if (url === '/favicon.ico') {
     return res.send('')
   }
-  // console.log('---')
-  // console.log(url)
-  // console.log('===')
-  // console.log(path)
-  // console.log('---')
   try {
-    getGithubPage(url, (response) => {
+    getGithubPage(`https://github.com${url}`, (response) => {
       if (response === 404) {
         return res.status(404).send(response);
       }
-      const json = scrapePage(response, path)
-      return res.json(json)
+      const data = scrapePage(response, { path, dependantType, perPage })
+      const moreResultsNeeded = (data.totalDependants < perPage) && (data.nextPageUrl !== null)
+      let entries = data.entries
+      console.log(moreResultsNeeded)
+      if (moreResultsNeeded) {
+        getGithubPage(data.nextPageUrl.replace('github-dependants.glitch.me', 'github.com'), (response) => {
+          if (response === 404) {
+            return res.status(404).send(response);
+          }
+          const data = scrapePage(response, { path, dependantType, perPage })
+          console.log(data)
+        })
+      }
+      console.log(entries)
+      return res.json(data)
     })
   } catch (err) {
     return next(err);
   }
 });
 
-function scrapePage (response, path) {
+function scrapePage (response, { path, dependantType, perPage }) {
   let $ = cheerio.load(response)
   const $dependants = $('#dependents')
   const totalDependants =
@@ -76,12 +84,12 @@ function scrapePage (response, path) {
   
   const previousPageUrl =
         ($dependants
-          .find(`[href^='https://github.com${path}?dependent_type=REPOSITORY&dependents_before']`)
+          .find(`[href^='https://github.com${path}?dependent_type=${dependantType}&dependents_before']`)
           .attr('href') || '')
           .replace('github.com', 'github-dependants.glitch.me') || null
   const nextPageUrl =
         ($dependants
-          .find(`[href^='https://github.com${path}?dependent_type=REPOSITORY&dependents_after']`)
+          .find(`[href^='https://github.com${path}?dependent_type=${dependantType}&dependents_after']`)
           .attr('href') || '')
           .replace('github.com', 'github-dependants.glitch.me') || null
   
@@ -100,9 +108,13 @@ function scrapePage (response, path) {
       stars,
       forks
     }
-  }).get()
+  }).get().slice(0, perPage)
+  
+  const entriesOnPage = entries.length
 
   return {
+    perPage,
+    entriesOnPage,
     totalDependants,
     totalPackages,
     previousPageUrl,
