@@ -5,4 +5,5 @@
 example:
 
 GOV.UK Frontend's 
-https://github-dependants.glitch.me/alphagov/govuk-frontend
+- default: https://github-dependants.glitch.me/alphagov/govuk-frontend
+- params: https://github-dependants.glitch.me/alphagov/govuk-frontend?type=package&limit=1

@@ -34,19 +34,20 @@ app.use(cors());
 
 app.get('*', async (req, res, next) => {
   const { url, path } = req
-  const dependantType = (req.query['type'] || 'repository').toUpperCase()
-  const limit = parseInt(req.query['limit'], 10) || 30
+  const dependentType = (req.query['type'] || 'repository').toUpperCase()
+  const limit = parseInt(req.query['limit'], 10) || 10000
   if (url === '/favicon.ico') {
     return res.send('')
   }
   try {
-    console.log(`https://github.com${path}/network/dependents?dependant_type=${dependantType}&limit=${limit}`)
+    let entryUrl = `https://github.com${path}/network/dependents?dependent_type=${dependentType}`
     recurseDependants(
-      { res, url: `https://github.com${path}/network/dependents?dependant_type=${dependantType}&limit=${limit}`, path, dependantType, limit },
+      { res, url: entryUrl, path, dependentType, limit },
       (err, data) => {
       if (err === 404) {
         return res.status(404).send(data);
       }
+      console.log(data.entries.length)
       return res.send(data)
     })
   } catch (err) {
@@ -54,14 +55,16 @@ app.get('*', async (req, res, next) => {
   }
 });
 
-function recurseDependants ({ res, url, path, dependantType, limit }, callback) {
+function recurseDependants ({ res, url, path, dependentType, limit }, callback) {
   getGithubPage(url, (response) => {
     if (response === 404) {
       return callback(404, null);
     }
-    let data = scrapePage(response, { path, dependantType, limit })
+    let data = scrapePage(response, { path, dependentType, limit })
     const hasReachedLimit = data.entriesOnPage >= limit;
     if (hasReachedLimit) {
+      delete data.nextPageUrl
+      delete data.previousPageUrl
       data.entriesOnPage = limit
       data.entries = data.entries.slice(0, limit)
       return callback(null, data)
@@ -70,14 +73,13 @@ function recurseDependants ({ res, url, path, dependantType, limit }, callback) 
     if (!moreResultsNeeded) {
       delete data.nextPageUrl
       delete data.previousPageUrl
-      console.log(data)
       return callback(null, data)
     }
     let deepData = recurseDependants({
       res,
       url: data.nextPageUrl.replace('github-dependants.glitch.me', 'github.com'),
       path,
-      dependantType,
+      dependentType,
       limit
     }, (err, deepData) => {
       if (err) {
@@ -90,7 +92,7 @@ function recurseDependants ({ res, url, path, dependantType, limit }, callback) 
   })
 }
 
-function scrapePage (response, { path, dependantType, limit }) {
+function scrapePage (response, { path, dependentType, limit }) {
   let $ = cheerio.load(response)
   const $dependants = $('#dependents')
   const totalDependants =
@@ -98,35 +100,40 @@ function scrapePage (response, { path, dependantType, limit }) {
           $dependants.find(`[href='${path}/network/dependents?dependent_type=REPOSITORY']`)
             .text()
             .trim()
+            .replace(',', '')
             .match('[0-9]*')[0], 10)
   const totalPackages =
       parseInt(
           $dependants.find(`[href='${path}/network/dependents?dependent_type=PACKAGE']`)
             .text()
             .trim()
+            .replace(',', '')
             .match('[0-9]*')[0], 10)
   
   
   const previousPageUrl =
         ($dependants
-          .find(`[href^='https://github.com${path}/network/dependents?dependent_type=${dependantType}&dependents_before']`)
-          .attr('href') || '')
-          .replace('github.com', 'github-dependants.glitch.me') || null
+          .find(`[href^='https://github.com${path}/network/dependents?dependent_type=${dependentType}&dependents_before']`)
+          .attr('href') || '') || null
   const nextPageUrl =
         ($dependants
-          .find(`[href^='https://github.com${path}/network/dependents?dependent_type=${dependantType}&dependents_after']`)
-          .attr('href') || '')
-          .replace('github.com', 'github-dependants.glitch.me') || null
+          .find(`[href^='https://github.com${path}/network/dependents?dependent_type=${dependentType}&dependents_after']`)
+          .attr('href') || '') || null
   
   const $entries = $dependants.find('.Box-row')
   const entries = $entries.map((index, entry) => {
     let $entry = $(entry)
     let avatarImage = $entry.find('.avatar').attr('src');
+    let isGhost = $entry.find('[alt="@ghost"]').length > 0
     let org = $entry.find('[href]:not([class])').text().trim();
     let repo = $entry.find('[href].text-bold').text().trim();
+    if (isGhost) {
+      repo = $entry.find('.text-gray-light').text().trim();
+    }
     let stars = parseInt($entry.find('.octicon-star').parent().text().trim(), 10)
     let forks = parseInt($entry.find('.octicon-repo-forked').parent().text().trim(), 10)
     return {
+      isGhost,
       avatarImage,
       org,
       repo,
@@ -138,7 +145,6 @@ function scrapePage (response, { path, dependantType, limit }) {
   const entriesOnPage = entries.length
 
   return {
-    limit,
     entriesOnPage,
     totalDependants,
     totalPackages,
