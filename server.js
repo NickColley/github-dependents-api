@@ -144,8 +144,6 @@ function scrapePage (response, { path, dependentType, limit }) {
     entriesOnPage,
     totalDependants,
     totalPackages,
-    previousPageUrl,
-    nextPageUrl,
     entries
   }
 }
