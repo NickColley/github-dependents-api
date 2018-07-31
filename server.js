@@ -48,6 +48,9 @@ app.get('*', async (req, res, next) => {
         return res.status(404).send(data);
       }
   
+      delete data.entriesOnPage
+      delete data.previousPageUrl
+      delete data.nextPageUrl
       return res.send(data)
     })
   } catch (err) {
@@ -144,6 +147,8 @@ function scrapePage (response, { path, dependentType, limit }) {
     entriesOnPage,
     totalDependants,
     totalPackages,
+    previousPageUrl,
+    nextPageUrl,
     entries
   }
 }
