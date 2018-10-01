@@ -1,5 +1,3 @@
-# Github Dependants API
-
 ?type=package or ?type=repository (default repository)
 
 ?limit=n (default 100)
