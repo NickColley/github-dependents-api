@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "name": "registers-proxy",
+  "version": "0.0.1",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.15.3",
+    "cors": "^2.8.3",
+    "request": "^2.87.0",
+    "cached-request": "^1.1.4",
+    "didyoumean": "^1.2.1",
+    "cheerio": "^0.22.0"
+  },
+  "license": "MIT"
+}
