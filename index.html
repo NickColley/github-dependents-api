@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Github Dependents API</title>
+    <style>
+      html, body {
+        font-family: Helvetica, sans-serif;
+        font-size: 18px;
+      }
+      
+      main {
+        max-width: 45rem;
+        padding: 1rem;
+        margin: auto;
+      }
+      
+      p {
+        max-width: 66ch;
+      }
+      
+      table {
+        width: 100%;
+      }
+      
+      th {
+        text-align: left;
+      }
+      
+      ul {
+        padding-left: 1em;
+      }
+      
+      li {
+        margin-bottom: .5em;
+      }
+      
+      pre {
+        max-width: 100%;
+        overflow: auto;
+        padding: 1rem;
+        background: black;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Github Dependents API</h1>
+      <p>
+        The Github has some interesting insights into what other repositories depend on your project, but this isn't available via the <a href="https://developer.github.com/v3/repos/">Github API</a>
+      </p>
+      <p>
+        This project scrapes the Github pages, and returns a JSON output until an official source is available.
+      </p>
+      <h2>
+        Endpoints
+      </h2>
+      <pre><code>/:organisation/:repository</code></pre>
+      <pre><code>/:organisation/:repository/?type=[repository|package] (defaults to repository)</code></pre>
+      <pre><code>/:organisation/:repository/?limit=[number] (defaults to 100, 30 per page)</code></pre> 
+      
+      <h2>
+        Examples
+      </h2>
+      <p>
+        <ul>
+          <li>
+            <a href="https://github-dependents.glitch.me/alphagov/govuk-frontend">
+              /alphagov/frontend
+            </a>
+          </li>
+          <li>
+            <a href="https://github-dependents.glitch.me/facebook/react?limit=10">
+              /facebook/react/?limit=10
+            </a>
+          </li>
+          <li>
+            <a href="https://github-dependents.glitch.me/dequelabs/axe-core/?type=package">
+              /dequelabs/axe-core/?type=package
+            </a>
+          </li>
+        </ul>
+      </p>
+    </main>
+  </body>
+</html>
